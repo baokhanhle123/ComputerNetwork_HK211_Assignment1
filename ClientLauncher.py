@@ -8,7 +8,7 @@ if __name__ == "__main__":
         serverAddr = sys.argv[1]
         serverPort = sys.argv[2]
         rtpPort = sys.argv[3]
-        fileName = sys.argv[4]
+        fileNameList = sys.argv[4]
 
         if serverAddr == "localhost":
             hostname = socket.gethostname()
@@ -28,9 +28,9 @@ if __name__ == "__main__":
         serverAddr = local_ip
     serverPort = 1200
     rtpPort = 5008
-    fileName = "movie.Mjpeg"
+    fileNameList = "[movie.Mjpeg,movie.Mjpeg]"
 
     # Create a new client (by command line)
-    app = Client(root, serverAddr, serverPort, rtpPort, fileName)
+    app = Client(root, serverAddr, serverPort, rtpPort, fileNameList)
     app.master.title("RTPClient")
     root.mainloop()

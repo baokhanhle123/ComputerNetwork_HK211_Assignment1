@@ -22,17 +22,23 @@ class Client:
     TEARDOWN = 3
     STOP = 4
     DESCRIBE = 5
+    SWITCH = 6
 
     # Initiation..
-    def __init__(self, master, serveraddr, serverport, rtpport, filename):
+    def __init__(self, master, serveraddr, serverport, rtpport, fileNameList):
+        self.video_list = fileNameList[1:len(fileNameList) - 1]
+        self.video_list = self.video_list.split(',')
+        print(self.video_list)
+        self.video_list_index = 0
+
         self.master = master
         self.master.protocol("WM_DELETE_WINDOW", self.handler)
-        self.timeBox = 0
+        self.timeBox = "0 : 0"
         self.createWidgets()
         self.serverAddr = serveraddr
         self.serverPort = int(serverport)
         self.rtpPort = int(rtpport)
-        self.fileName = filename
+        self.fileName = self.video_list[0]
         self.rtspSeq = 0
         self.sessionId = 0
         self.requestSent = -1
@@ -82,6 +88,12 @@ class Client:
         self.describe["text"] = "Describe"
         self.describe["command"] = self.setDescribe
         self.describe.grid(row=1, column=4, padx=2, pady=2)
+
+        # Create Switch button
+        self.switch = Button(self.master, width=20, padx=3, pady=3)
+        self.switch["text"] = "Switch"
+        self.switch["command"] = self.setSwitch
+        self.switch.grid(row=1, column=5, padx=2, pady=2)
 
         # Create time:
         self.status = Label(self.master, text="Watched time : " + str(self.timeBox), bd=1, relief=SUNKEN, anchor=W)
@@ -134,6 +146,9 @@ class Client:
     def setDescribe(self):
         self.sendRtspRequest(self.DESCRIBE)
 
+    def setSwitch(self):
+        self.sendRtspRequest(self.SWITCH)
+
     def listenRtp(self):
         """Listen for RTP packets."""
         while True:
@@ -152,9 +167,9 @@ class Client:
                     currFrameNbr = rtpPacket.seqNum()
                     print("Current Seq Num: " + str(currFrameNbr))
 
-                    # Set time
+                    # Set time box
                     currentTime = int(currFrameNbr * 0.05)
-                    self.timeBox = currentTime
+                    self.timeBox = str(currentTime // 60) + " : " + str(currentTime % 60)
                     self.status = Label(self.master, text="Watched time : " + str(self.timeBox), bd=1, relief=SUNKEN,
                                         anchor=W)
                     self.status.grid(row=2, column=0, columnspan=1, sticky=W + E)
@@ -268,17 +283,35 @@ class Client:
             request = request + "Transport: RTP/UDP; client_port= %d\n" % (self.rtpPort)
             self.requestSent = self.STOP
 
+            # Update time box
             self.timeBox = 0
             self.status = Label(self.master, text="Watched time : " + str(self.timeBox), bd=1, relief=SUNKEN,
                                 anchor=W)
             self.status.grid(row=2, column=0, columnspan=1, sticky=W + E)
+
         # Describe request
-        elif requestCode == self.DESCRIBE:
+        elif requestCode == self.DESCRIBE and self.state == self.PLAYING:
             self.rtspSeq += 1
             request = 'DESCRIBE' + ' ' + self.fileName + ' RTSP/1.0\n'
             request = request + ("CSeq: %d\n" % self.rtspSeq)
             request = request + "Transport: RTP/UDP; client_port= %d\n" % (self.rtpPort)
             self.requestSent = self.DESCRIBE
+
+        # Describe request
+        elif requestCode == self.SWITCH and self.state == self.PLAYING:
+            self.rtspSeq += 1
+
+            # Switch movie
+            if self.video_list_index < len(self.video_list) - 1:
+                self.video_list_index += 1
+            else:
+                self.video_list_index = 0
+            self.fileName = self.video_list[self.video_list_index]
+
+            request = 'SWITCH' + ' ' + self.fileName + ' RTSP/1.0\n'
+            request = request + ("CSeq: %d\n" % self.rtspSeq)
+            request = request + "Transport: RTP/UDP; client_port= %d\n" % (self.rtpPort)
+            self.requestSent = self.SWITCH
 
         else:
             return
@@ -351,6 +384,13 @@ class Client:
                         # file = open(cachename, "w")
                         # file.write(str(lines[3]) + '\n' + str(lines[4])+'\nSize of Video: '+str(lines[5])+' bytes')
                         print(data + '\n')
+                    elif self.requestSent == self.SWITCH:
+                        # Stop first
+                        self.frameNbr = 0
+                        self.rtspSeq = 0
+                        self.stoped = 1
+
+                        self.state = self.SWITCH
 
     def openRtpPort(self):
         """Open RTP socket binded to a specified port."""
