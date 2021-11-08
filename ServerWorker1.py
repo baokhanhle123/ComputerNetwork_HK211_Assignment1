@@ -12,8 +12,6 @@ class ServerWorker:
     TEARDOWN = 'TEARDOWN'
     STOP = 'STOP'
     DESCRIBE = 'DESCRIBE'
-    SWITCH = 'SWITCH'
-
     INIT = 0
     READY = 1
     PLAYING = 2
@@ -111,7 +109,6 @@ class ServerWorker:
             # Close the RTP socket
             self.clientInfo['rtpSocket'].close()
 
-        # Process STOP request
         elif requestType == self.STOP:
             print("processing STOP\n")
             self.clientInfo['event'].set()
@@ -119,36 +116,9 @@ class ServerWorker:
             self.state = self.INIT
             self.replyRtsp(self.OK_200, seq[1])
             self.clientInfo['rtpSocket'].close()
-
-        # Process DESCRIBE request
         elif requestType == self.DESCRIBE:
-            # print("processing DESCRIBE\n")
+            # print("processing STOP\n")
             self.replyRtsp_describe(self.OK_200, seq[1])
-
-        # Process SWITCH request
-        elif requestType == self.SWITCH:
-            print("processing SWITCH\n")
-            self.clientInfo['event'].set()
-            # self.clientInfo['videoStream']=VideoStream(filename)
-            self.state = self.INIT
-            self.replyRtsp(self.OK_200, seq[1])
-            self.clientInfo['rtpSocket'].close()
-            """# STOP first
-            print("processing STOP\n")
-            self.clientInfo['event'].set()
-            self.state = self.INIT
-            self.clientInfo['rtpSocket'].close()
-
-            # PLAY now
-            print("processing PLAY\n")
-            self.state = self.PLAYING
-            # Create a new socket for RTP/UDP
-            self.clientInfo["rtpSocket"] = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self.replyRtsp(self.OK_200, seq[1])
-            # Create a new thread and start sending RTP packets
-            self.clientInfo['event'] = threading.Event()
-            self.clientInfo['worker'] = threading.Thread(target=self.sendRtp)
-            self.clientInfo['worker'].start()"""
 
     def sendRtp(self):
         """Send RTP packets over UDP."""

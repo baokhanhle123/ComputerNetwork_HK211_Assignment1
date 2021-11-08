@@ -32,12 +32,14 @@ def with_ffprobe(filename):
     fps = eval(fields['r_frame_rate'])
     return duration, fps
 
+
 def with_moviepy(filename):
     from moviepy.editor import VideoFileClip
     clip = VideoFileClip(filename)
-    duration       = clip.duration
-    fps            = clip.fps
-    width, height  = clip.size
+    duration = clip.duration
+    fps = clip.fps
+    width, height = clip.size
     return duration, fps, (width, height)
+
 
 print(with_opencv('movie.Mjpeg'))

@@ -1,7 +1,7 @@
 import sys
 import socket
 from tkinter import Tk
-from Client import Client
+from Client1 import Client
 
 if __name__ == "__main__":
     try:

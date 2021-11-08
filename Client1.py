@@ -1,9 +1,12 @@
+from time import time
 from tkinter import *
-import tkinter.messagebox  # ,tkMessageBox
+import tkinter.messagebox
+from tkinter import messagebox
+
 from PIL import Image, ImageTk
 import socket, threading, sys, traceback, os
+
 from RtpPacket import RtpPacket
-from time import time
 
 CACHE_FILE_NAME = "cache-"
 CACHE_FILE_EXT = ".jpg"
@@ -284,13 +287,13 @@ class Client:
             self.requestSent = self.STOP
 
             # Update time box
-            self.timeBox = 0
+            self.timeBox = "0 : 0"
             self.status = Label(self.master, text="Watched time : " + str(self.timeBox), bd=1, relief=SUNKEN,
                                 anchor=W)
             self.status.grid(row=2, column=0, columnspan=1, sticky=W + E)
 
         # Describe request
-        elif requestCode == self.DESCRIBE and self.state == self.PLAYING:
+        elif requestCode == self.DESCRIBE:
             self.rtspSeq += 1
             request = 'DESCRIBE' + ' ' + self.fileName + ' RTSP/1.0\n'
             request = request + ("CSeq: %d\n" % self.rtspSeq)
@@ -298,10 +301,10 @@ class Client:
             self.requestSent = self.DESCRIBE
 
         # Describe request
-        elif requestCode == self.SWITCH and self.state == self.PLAYING:
+        elif requestCode == self.SWITCH:
             self.rtspSeq += 1
 
-            # Switch movie
+            # Switch video
             if self.video_list_index < len(self.video_list) - 1:
                 self.video_list_index += 1
             else:
@@ -390,7 +393,8 @@ class Client:
                         self.rtspSeq = 0
                         self.stoped = 1
 
-                        self.state = self.SWITCH
+                        # Play then
+                        self.state = self.PLAYING
 
     def openRtpPort(self):
         """Open RTP socket binded to a specified port."""
