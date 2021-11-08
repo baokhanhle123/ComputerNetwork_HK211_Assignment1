@@ -12,6 +12,7 @@ class ServerWorker:
     TEARDOWN = 'TEARDOWN'
     STOP = 'STOP'
     DESCRIBE = 'DESCRIBE'
+    SWITCH = 'SWITCH'
     INIT = 0
     READY = 1
     PLAYING = 2
@@ -116,9 +117,17 @@ class ServerWorker:
             self.state = self.INIT
             self.replyRtsp(self.OK_200, seq[1])
             self.clientInfo['rtpSocket'].close()
+
         elif requestType == self.DESCRIBE:
             # print("processing STOP\n")
             self.replyRtsp_describe(self.OK_200, seq[1])
+
+        elif requestType == self.SWITCH:
+            print("processing SWITCH\n")
+            self.clientInfo['event'].set()
+            self.state = self.INIT
+            self.replyRtsp(self.OK_200, seq[1])
+            self.clientInfo['rtpSocket'].close()
 
     def sendRtp(self):
         """Send RTP packets over UDP."""

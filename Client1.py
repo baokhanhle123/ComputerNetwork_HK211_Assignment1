@@ -150,7 +150,12 @@ class Client:
         self.sendRtspRequest(self.DESCRIBE)
 
     def setSwitch(self):
+        self.label.image = None
         self.sendRtspRequest(self.SWITCH)
+        try:
+            os.remove(CACHE_FILE_NAME + str(self.sessionId) + CACHE_FILE_EXT)
+        except:
+            pass
 
     def listenRtp(self):
         """Listen for RTP packets."""
@@ -303,6 +308,8 @@ class Client:
         # Describe request
         elif requestCode == self.SWITCH:
             self.rtspSeq += 1
+            self.state = self.INIT
+            self.stop = 1
 
             # Switch video
             if self.video_list_index < len(self.video_list) - 1:
@@ -315,6 +322,12 @@ class Client:
             request = request + ("CSeq: %d\n" % self.rtspSeq)
             request = request + "Transport: RTP/UDP; client_port= %d\n" % (self.rtpPort)
             self.requestSent = self.SWITCH
+
+            # Update time box
+            self.timeBox = "0 : 0"
+            self.status = Label(self.master, text="Watched time : " + str(self.timeBox), bd=1, relief=SUNKEN,
+                                anchor=W)
+            self.status.grid(row=2, column=0, columnspan=1, sticky=W + E)
 
         else:
             return
@@ -392,9 +405,6 @@ class Client:
                         self.frameNbr = 0
                         self.rtspSeq = 0
                         self.stoped = 1
-
-                        # Play then
-                        self.state = self.PLAYING
 
     def openRtpPort(self):
         """Open RTP socket binded to a specified port."""
