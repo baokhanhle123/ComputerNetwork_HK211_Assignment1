@@ -1,6 +1,6 @@
 import sys, socket
 
-from ServerWorker1 import ServerWorker
+from ServerWorker import ServerWorker
 
 class Server:	
 	

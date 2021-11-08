@@ -1,7 +1,7 @@
 import sys
 import socket
 from tkinter import Tk
-from Client1 import Client
+from Client import Client
 
 if __name__ == "__main__":
     try:
@@ -18,7 +18,7 @@ if __name__ == "__main__":
         print("[Usage: ClientLauncher.py Server_name Server_port RTP_port Video_file]\n")
 
     root = Tk()
-
+    """
     # Create a new client
     serverAddr = "localhost"
     if serverAddr == "localhost":
@@ -28,7 +28,7 @@ if __name__ == "__main__":
         serverAddr = local_ip
     serverPort = 1200
     rtpPort = 5008
-    fileNameList = "[movie.Mjpeg,movie.Mjpeg]"
+    fileNameList = "[movie.Mjpeg,movie.Mjpeg]"""
 
     # Create a new client (by command line)
     app = Client(root, serverAddr, serverPort, rtpPort, fileNameList)
