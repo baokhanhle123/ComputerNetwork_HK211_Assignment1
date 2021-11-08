@@ -4,9 +4,10 @@ from PIL import Image, ImageTk
 import socket, threading, sys, traceback, os
 from RtpPacket import RtpPacket
 from time import time
+
 CACHE_FILE_NAME = "cache-"
 CACHE_FILE_EXT = ".jpg"
-CACHE_FILE_TEXT='.txt'
+CACHE_FILE_TEXT = '.txt'
 
 
 class Client:
@@ -26,6 +27,7 @@ class Client:
     def __init__(self, master, serveraddr, serverport, rtpport, filename):
         self.master = master
         self.master.protocol("WM_DELETE_WINDOW", self.handler)
+        self.timeBox = 0
         self.createWidgets()
         self.serverAddr = serveraddr
         self.serverPort = int(serverport)
@@ -68,14 +70,22 @@ class Client:
         # Create a label to display the movie
         self.label = Label(self.master, height=19)
         self.label.grid(row=0, column=0, columnspan=4, sticky=W + E + N + S, padx=5, pady=5)
+
+        # Create Stop button
         self.stop = Button(self.master, width=20, padx=3, pady=3)
         self.stop["text"] = "Stop"
         self.stop["command"] = self.setStop
         self.stop.grid(row=1, column=3, padx=2, pady=2)
+
+        # Create Describe button
         self.describe = Button(self.master, width=20, padx=3, pady=3)
         self.describe["text"] = "Describe"
         self.describe["command"] = self.setDescribe
         self.describe.grid(row=1, column=4, padx=2, pady=2)
+
+        # Create time:
+        self.status = Label(self.master, text="Watched time : " + str(self.timeBox), bd=1, relief=SUNKEN, anchor=W)
+        self.status.grid(row=2, column=0, columnspan=1, sticky=W + E)
 
     def setupMovie(self):
         """Setup button handler."""
@@ -90,6 +100,7 @@ class Client:
             os.remove(CACHE_FILE_NAME + str(self.sessionId) + CACHE_FILE_EXT)
         except:
             pass
+
     def pauseMovie(self):
         """Pause button handler."""
         if self.state == self.PLAYING:
@@ -131,15 +142,22 @@ class Client:
                 if data:
                     rtpPacket = RtpPacket()
                     rtpPacket.decode(data)
-                    size_payload=str(sys.getsizeof(rtpPacket.getPayload()))
-                    time_tr=time()-rtpPacket.timestamp()
+                    size_payload = str(sys.getsizeof(rtpPacket.getPayload()))
+                    time_tr = time() - rtpPacket.timestamp()
 
-                    print('size frame: '+str(size_payload)+'\n'+\
-                        'time: '+str(time_tr)+'\n'+\
-                            'video data rate: '+str(int(size_payload)//time_tr)+ ' bytes/s\n')
+                    print('size frame: ' + str(size_payload) + '\n' + \
+                          'time: ' + str(time_tr) + '\n' + \
+                          'video data rate: ' + str(int(size_payload) // time_tr) + ' bytes/s\n')
 
                     currFrameNbr = rtpPacket.seqNum()
                     print("Current Seq Num: " + str(currFrameNbr))
+
+                    # Set time
+                    currentTime = int(currFrameNbr * 0.05)
+                    self.timeBox = currentTime
+                    self.status = Label(self.master, text="Watched time : " + str(self.timeBox), bd=1, relief=SUNKEN,
+                                        anchor=W)
+                    self.status.grid(row=2, column=0, columnspan=1, sticky=W + E)
 
                     if currFrameNbr > self.frameNbr:  # Discard the late packet
                         self.frameNbr = currFrameNbr
@@ -238,15 +256,23 @@ class Client:
             request += "Session: %d\n" % self.sessionId
             # Keep track of the sent request.
             self.requestSent = self.TEARDOWN
+
+        # Stop request
         elif requestCode == self.STOP and not self.state == self.INIT:
             self.rtspSeq += 1
             self.state = self.INIT
-            self.stop=1
+            self.stop = 1
             # Write the RTSP request to be sent.
             request = 'STOP' + ' ' + self.fileName + ' RTSP/1.0\n'
             request = request + ("CSeq: %d\n" % self.rtspSeq)
             request = request + "Transport: RTP/UDP; client_port= %d\n" % (self.rtpPort)
             self.requestSent = self.STOP
+
+            self.timeBox = 0
+            self.status = Label(self.master, text="Watched time : " + str(self.timeBox), bd=1, relief=SUNKEN,
+                                anchor=W)
+            self.status.grid(row=2, column=0, columnspan=1, sticky=W + E)
+        # Describe request
         elif requestCode == self.DESCRIBE:
             self.rtspSeq += 1
             request = 'DESCRIBE' + ' ' + self.fileName + ' RTSP/1.0\n'
@@ -310,7 +336,7 @@ class Client:
                         # The play thread exits. A new thread is created on resume.
                         self.playEvent.set()
                     elif self.requestSent == self.TEARDOWN:
-                        self.state=self.INIT
+                        self.state = self.INIT
                         # Flag the teardownAcked to close the socket.
                         self.teardownAcked = 1
                     elif self.requestSent == self.STOP:
@@ -320,11 +346,11 @@ class Client:
                         # self.playEvent.set()
                         self.stoped = 1
                     elif self.requestSent == self.DESCRIBE:
-						#print str(data)
+                        # print str(data)
                         # cachename = CACHE_FILE_NAME + str(self.sessionId) + '.txt'
                         # file = open(cachename, "w")
                         # file.write(str(lines[3]) + '\n' + str(lines[4])+'\nSize of Video: '+str(lines[5])+' bytes')
-                        print(data+'\n')
+                        print(data + '\n')
 
     def openRtpPort(self):
         """Open RTP socket binded to a specified port."""
